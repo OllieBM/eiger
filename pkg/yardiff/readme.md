@@ -1,0 +1,1 @@
+https://github.com/palucki/yardiff/blob/main/lib/rollingchecksum.cpp
