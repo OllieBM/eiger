@@ -15,6 +15,10 @@ type Block struct {
 	// no weak, its only part of signature
 }
 
+// type SignatureObj struct {
+// 	hashtable    map[uint32][]Block
+// 	strongHasher hash.Hash
+// }
 type Signature map[uint32][]Block
 
 func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, error) {
