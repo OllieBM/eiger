@@ -45,6 +45,7 @@ func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, 
 		}
 
 		buf = buf[:n] // trim of waste
+
 		// calculate strong hash
 		strongHasher.Reset()
 		n, err = strongHasher.Write(buf)
@@ -55,7 +56,7 @@ func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, 
 
 		// calculate weak hash
 		weak := rc.Calculate(buf)
-
+		log.Debug().Msgf("adding signature: '%s' weak:[%d])", string(buf), weak)
 		// one weak hash could correspond to several strong hashes
 		// so we can keep a list
 		signature[weak] = append(signature[weak], Block{Index: block_index, Strong: strong})

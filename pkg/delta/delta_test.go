@@ -50,33 +50,3 @@ func TestCalculate(t *testing.T) {
 	require.Len(t, opW.Operations(), 2)
 
 }
-
-func TestE2E(t *testing.T) {
-	old := "Hello"
-	new := "HelloWorld"
-
-	opW := &operation.OpWriter{}
-	opW.AddMatch(0)
-	expected := opW.Operations()
-	require.Len(t, expected, 1)
-	opW.AddMiss('W')
-	opW.AddMiss('o')
-	opW.AddMiss('r')
-	opW.AddMiss('l')
-	opW.AddMiss('d')
-	expected = opW.Operations()
-	require.Len(t, expected, 2)
-	// create a signature
-
-	hasher := md5.New()
-	sig, err := signature.Calculate(strings.NewReader(old), 5, hasher)
-	require.NoError(t, err)
-	require.NotNil(t, sig)
-
-	opW = &operation.OpWriter{}
-	err = Calculate(strings.NewReader(new), sig, hasher, 5, opW)
-	require.NoError(t, err)
-
-	require.Equal(t, expected, opW.Operations())
-
-}

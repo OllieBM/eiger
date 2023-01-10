@@ -3,7 +3,6 @@ package delta
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"hash"
 	"io"
 
@@ -31,19 +30,21 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 			n, err = reader.Read(buf)
 			// if n == blockSize{ // sHould we skip/}
 			buf = buf[:n]
+
 			weak = r.Calculate(buf)
 		} else {
 			// read one byte
 			lastByte := buf[0]
-			buf = buf[1:] // remove the buffer
+			buf = buf[1:] // remove the element from buffer
 			var b byte
 			b, err = reader.ReadByte()
 			if err == nil {
 				// read will return a default byte
 				// and an error if something cannot be read
 				buf = append(buf, b)
-				weak = r.Roll(lastByte, b)
+
 			}
+			weak = r.Roll(lastByte, b)
 		}
 		if err != nil {
 			if err != io.EOF {
@@ -52,27 +53,57 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 			}
 			eof = true
 		}
+		if len(buf) == 0 {
+			continue
+		}
 
 		// look for a match in signature
 		match, indx := FindMatch(weak, buf, hasher, sig)
 		if match {
-			fmt.Println("add Match 0")
+			log.Debug().Msgf("Match for '%s' weak[%d]", buf, weak)
 			out.AddMatch(uint64(indx))
 			rolling = false
 			continue
 		} else {
-			if !eof {
-				// we now roll
-				rolling = true
-				// miss
-				out.AddMiss(buf[0])
+			log.Debug().Msgf("Miss for '%s' weak[%d]", buf, weak)
+			out.AddMiss(buf[0])
+			rolling = true
+			if eof {
+				// flush the last characters in the buffer
+				// and try matches or add misses
+				// TODO:
+				// we could just add everything as a miss
+				buf = buf[1:]
+				for len(buf) > 0 {
+					weak := r.Calculate(buf)
+					match, indx := FindMatch(weak, buf, hasher, sig)
+					if match {
+						log.Debug().Msgf("Match for '%s' %d", buf, weak)
+						out.AddMatch(uint64(indx))
+						buf = nil
+					} else {
 
-			} else {
-				// add all remaining
-				for _, c := range buf {
-					out.AddMiss(c)
+						log.Debug().Msgf("Miss for '%s' %d", buf, weak)
+						out.AddMiss(buf[0])
+						buf = buf[1:]
+					}
 				}
 			}
+
+			// if !eof {
+			// 	// we now roll
+			// 	rolling = true
+			// 	// miss
+			// 	out.AddMiss(buf[0])
+
+			// } else {
+			// 	// now we roll  and try to find a match
+
+			// 	// add all remaining
+			// 	for _, c := range buf {
+			// 		out.AddMiss(c)
+			// 	}
+			// }
 		}
 	}
 
