@@ -3,8 +3,8 @@ package operation
 type OpType uint8
 
 const (
-	OpMatch OpType = 1 // reference
-	OpMiss             // addition
+	OpMatch OpType = iota // reference
+	OpMiss                // addition
 )
 
 type Operation struct {
@@ -24,6 +24,7 @@ func (w *OpWriter) AddMatch(index uint64) {
 func (w *OpWriter) AddMiss(b byte) {
 	w.addMiss([]byte{b})
 }
+
 func (w *OpWriter) addMiss(bytes []byte) {
 	n := len(w.ops)
 	if n > 0 && w.ops[n-1].operation == OpMiss {
@@ -32,4 +33,8 @@ func (w *OpWriter) addMiss(bytes []byte) {
 		return
 	}
 	w.ops = append(w.ops, Operation{operation: OpMiss, data: bytes})
+}
+
+func (w *OpWriter) Operations() []Operation {
+	return w.ops
 }

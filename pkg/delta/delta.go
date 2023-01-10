@@ -3,6 +3,7 @@ package delta
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"hash"
 	"io"
 
@@ -12,11 +13,9 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSize uint64, out operation.OpWriter) error {
+func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSize uint64, out *operation.OpWriter) error {
 
 	reader := bufio.NewReader(in)
-
-	opW := operation.OpWriter{}
 	r := rolling_checksum.New()
 
 	eof := false
@@ -32,14 +31,19 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 			n, err = reader.Read(buf)
 			// if n == blockSize{ // sHould we skip/}
 			buf = buf[:n]
-			weak = r.Calculate(buf[:n])
+			weak = r.Calculate(buf)
 		} else {
 			// read one byte
 			lastByte := buf[0]
+			buf = buf[1:] // remove the buffer
 			var b byte
 			b, err = reader.ReadByte()
-			buf = append(buf[1:blockSize], b)
-			weak = r.Roll(lastByte, b)
+			if err == nil {
+				// read will return a default byte
+				// and an error if something cannot be read
+				buf = append(buf, b)
+				weak = r.Roll(lastByte, b)
+			}
 		}
 		if err != nil {
 			if err != io.EOF {
@@ -52,17 +56,22 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 		// look for a match in signature
 		match, indx := FindMatch(weak, buf, hasher, sig)
 		if match {
-			opW.AddMatch(uint64(indx))
+			fmt.Println("add Match 0")
+			out.AddMatch(uint64(indx))
 			rolling = false
 			continue
-		}
-		if !eof {
-			// miss
-			opW.AddMiss(buf[0])
 		} else {
-			// add all remaining
-			for _, c := range buf {
-				opW.AddMiss(c)
+			if !eof {
+				// we now roll
+				rolling = true
+				// miss
+				out.AddMiss(buf[0])
+
+			} else {
+				// add all remaining
+				for _, c := range buf {
+					out.AddMiss(c)
+				}
 			}
 		}
 	}
@@ -71,9 +80,10 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 }
 
 func FindMatch(weak uint32, buf []byte, hasher hash.Hash, sig signature.Signature) (bool, int) {
+	hasher.Reset()
 	if hashes, ok := sig[weak]; ok {
-		hasher.Reset()
-		strong := hasher.Sum(buf)
+		_, _ = hasher.Write(buf)
+		strong := hasher.Sum(nil)
 		for _, h := range hashes {
 			if bytes.Compare(strong, h.Strong) == 0 {
 				return true, h.Index

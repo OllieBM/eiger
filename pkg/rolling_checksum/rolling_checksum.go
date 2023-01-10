@@ -15,6 +15,7 @@ type rollingAdler32 struct {
 	hash         uint32
 	a            uint32
 	b            uint32
+	//buffer 		 []byte//
 }
 
 // TODO: move to a new rolling adler32
