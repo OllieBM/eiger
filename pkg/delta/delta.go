@@ -42,9 +42,12 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 				// read will return a default byte
 				// and an error if something cannot be read
 				buf = append(buf, b)
-
+				weak = r.Roll(lastByte, b)
+			} else {
+				// we have changes the block size
+				weak = r.Calculate(buf)
 			}
-			weak = r.Roll(lastByte, b)
+
 		}
 		if err != nil {
 			if err != io.EOF {
@@ -58,6 +61,7 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 		}
 
 		// look for a match in signature
+		log.Debug().Msgf("searchig for match: '%s' weak:[%d])", string(buf), weak)
 		match, indx := FindMatch(weak, buf, hasher, sig)
 		if match {
 			log.Debug().Msgf("Match for '%s' weak[%d]", buf, weak)
@@ -76,6 +80,7 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 				buf = buf[1:]
 				for len(buf) > 0 {
 					weak := r.Calculate(buf)
+					log.Debug().Msgf("searchig for match: '%s' weak:[%d])", string(buf), weak)
 					match, indx := FindMatch(weak, buf, hasher, sig)
 					if match {
 						log.Debug().Msgf("Match for '%s' %d", buf, weak)

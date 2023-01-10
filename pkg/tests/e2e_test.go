@@ -52,35 +52,55 @@ func TestOutput(t *testing.T) {
 		chunkSize int
 	}{
 		{
+			// add a desc
 			"hello",
 			"hello",
 			"= BLOCK_0\n",
 			5,
 		},
 		{
+			// add a desc
+			"hello Worl",
+			"hello Worl",
+			"= BLOCK_0\n= BLOCK_1\n",
+			5,
+		},
+		{
+			// add a desc
+			// example with tail matching
+			"hello World",
+			"hello World", // hello| worl |d
+			"= BLOCK_0\n= BLOCK_1\n= BLOCK_2\n",
+			5,
+		},
+		{
+			// add a desc
 			"hello",
 			"helloWorld",
 			"= BLOCK_0\n+ 5 World\n",
 			5,
 		},
 		{
+			// add a desc
 			"hello",
 			"",
 			"",
 			5,
 		},
 		{
+			// add a desc
+
 			// this is an example
-			// of 'dropping the tail'
-			// we could still maintain using the last values now we support
-			// weak hash collisions
-			// but current behaviour here is an example of
+			// of 'dropping the tail' the check for the ` end`
+			// does not match up
 			"start end",
-			"start middle end",
-			"= BLOCK_0\n+ 11  middle end\n", // take note of the whitespace ` middle end`
+			"start middle end", // start| midd|le en|d
+			//"= BLOCK_0\n+ 11  middle end\n", // take note of the whitespace ` middle end`
+			"= BLOCK_0\n+ 7  middle\n= BLOCK_1\n",
 			5,
 		},
 		{
+			// add a desc
 			"",
 			"123 add missing text 456",
 			"+ 24 123 add missing text 456\n",
