@@ -5,7 +5,7 @@ import (
 	"hash"
 	"io"
 
-	"github.com/olliebm/eiger/rolling_checksum"
+	"github.com/OllieBM/eiger/pkg/rolling_checksum"
 	"github.com/rs/zerolog/log"
 )
 
@@ -24,7 +24,7 @@ type Signature map[uint32][]Block
 func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, error) {
 
 	reader := bufio.NewReader(in)
-	buf := make([]byte, 0, blockSize)
+	buf := make([]byte, blockSize)
 
 	rc := rolling_checksum.New()
 	signature := make(Signature)
@@ -35,9 +35,11 @@ func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, 
 		if err != nil {
 			if err != io.EOF {
 				log.Error().Err(err).Msg("could not read from input")
+				return nil, err
 			}
 			eof = true
 		}
+		// fmt.Println(buf)
 		if n == 0 {
 			continue
 		}

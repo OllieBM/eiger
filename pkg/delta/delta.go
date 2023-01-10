@@ -21,7 +21,7 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 
 	eof := false
 	rolling := false
-	buf := make([]byte, 0, blockSize)
+	buf := make([]byte, blockSize)
 	var n int
 	var err error
 	for !eof {

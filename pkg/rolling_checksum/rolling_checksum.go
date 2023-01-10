@@ -1,23 +1,28 @@
 package rolling_checksum
 
-const MODULO_FACTOR = 65536
+const MODULO_FACTOR = 65521
 
 type RollingChecksum interface {
+	Calculate([]byte) uint32
+	Roll(out, in byte) uint32
 }
 
-type adler32 struct {
+// modified adler32 algorithm
+// as used in https://rsync.samba.org/tech_report/node3.html
+// hint: no need for the plus 1 because arrays are indexed from 0
+type rollingAdler32 struct {
 	m_block_size int
-	hash         uint64
-	a            uint64
-	b            uint64
+	hash         uint32
+	a            uint32
+	b            uint32
 }
 
 // TODO: move to a new rolling adler32
 func New() RollingChecksum {
-	return &adler32{}
+	return &rollingAdler32{}
 }
 
-func (r *adler32) Calculate(bytes []byte) uint64 {
+func (r *rollingAdler32) Calculate(bytes []byte) uint32 {
 
 	r.hash = 0
 	r.a = 0
@@ -25,8 +30,8 @@ func (r *adler32) Calculate(bytes []byte) uint64 {
 	r.m_block_size = len(bytes)
 
 	for i, c := range bytes {
-		r.a += uint64(c)
-		r.b += uint64(r.m_block_size-i) * uint64(c)
+		r.a += uint32(c)
+		r.b += uint32(r.m_block_size-i) * uint32(c)
 	}
 
 	r.a = r.a % MODULO_FACTOR
@@ -38,10 +43,10 @@ func (r *adler32) Calculate(bytes []byte) uint64 {
 }
 
 //
-func (r *adler32) Roll(out, in byte) uint64 {
+func (r *rollingAdler32) Roll(out, in byte) uint32 {
 
-	r.a = (r.a - uint64(out) + uint64(in)) % MODULO_FACTOR
-	r.b = (r.b - uint64(r.m_block_size)*uint64(out) + r.a) % MODULO_FACTOR
+	r.a = (r.a - uint32(out) + uint32(in)) % MODULO_FACTOR
+	r.b = (r.b - uint32(r.m_block_size)*uint32(out) + r.a) % MODULO_FACTOR
 	r.hash = r.a + MODULO_FACTOR*r.b
 
 	return r.hash

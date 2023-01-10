@@ -16,9 +16,9 @@ func TestCalculate(t *testing.T) {
 	target := "HelloWorld"
 	sig, err := signature.Calculate(strings.NewReader(source), 5, md5.New())
 	require.NoError(t, err)
-	require.NotNil(sig)
+	require.NotNil(t, sig)
 
 	opW := operation.OpWriter{}
-	err = Calculate(strings.NewReader(target), si, md5.New(), 5, opW)
+	err = Calculate(strings.NewReader(target), sig, md5.New(), 5, opW)
 	require.NoError(t, err)
 }
