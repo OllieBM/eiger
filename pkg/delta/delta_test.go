@@ -50,3 +50,18 @@ func TestCalculate(t *testing.T) {
 	require.Len(t, opW.Operations(), 2)
 
 }
+
+func TestCalculate2(t *testing.T) {
+
+	source := "Hello"
+	target := "HelloWorld"
+	sig, err := signature.Calculate(strings.NewReader(source), 5, md5.New())
+	require.NoError(t, err)
+	require.NotNil(t, sig)
+
+	opW := operation.OpWriter{} // use mockgen
+	err = Calculate2(strings.NewReader(target), sig, md5.New(), 5, &opW)
+	require.NoError(t, err)
+	//require.ErrorIs(t, err, io.EOF)
+	require.Len(t, opW.Operations(), 2)
+}

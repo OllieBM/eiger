@@ -115,6 +115,72 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 	return nil
 }
 
+// Refactor
+// Calculate2 will generate a delta between 'in' and the signature file
+// in should be the 'leader' file and the signature file should be based
+// on the 'follower' file.
+func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSize uint64, out *operation.OpWriter) error {
+
+	reader := bufio.NewReader(in)
+	r := rolling_checksum.New()
+
+	chunk := make([]byte, blockSize)
+	one := make([]byte, 1)
+	buf := chunk // shadow the underlying buffer
+
+	rolling := false
+
+	var prevC byte
+	var weak uint32
+	var n int
+	var err error
+	// read either [1]byte or [blockSize]byte from reader
+	// until an error occurs
+	for n, err = reader.Read(buf); err == nil; n, err = reader.Read(buf) {
+		if !rolling {
+			weak = r.Calculate(buf)
+		} else {
+			weak = r.Roll(prevC, buf[len(buf)-1])
+		}
+
+		log.Debug().Msgf("finding match for %s [%d]", buf, weak)
+		match, indx := FindMatch(weak, buf, hasher, sig)
+		if match {
+			rolling = false
+			buf = chunk // read chunk
+			out.AddMatch(uint64(indx))
+		} else {
+			rolling = true
+			prevC = buf[0]
+			buf = one
+			out.AddMiss(buf[0])
+		}
+	}
+	// tail
+	// TODO: wrap up into a closure or function to streamline code
+	if n != 0 {
+		for len(buf) > 0 {
+			weak = r.Calculate(buf)
+			match, indx := FindMatch(weak, buf, hasher, sig)
+			if match {
+				out.AddMatch(uint64(indx))
+				break
+			} else {
+				prevC = buf[0]
+				out.AddMiss(prevC)
+				buf = buf[1:]
+			}
+		}
+	}
+
+	if err != nil {
+		if err != io.EOF {
+			return err
+		}
+	}
+	return nil
+}
+
 func FindMatch(weak uint32, buf []byte, hasher hash.Hash, sig signature.Signature) (bool, int) {
 	hasher.Reset()
 	if hashes, ok := sig[weak]; ok {
