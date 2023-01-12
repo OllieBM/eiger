@@ -61,7 +61,7 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 		}
 
 		// look for a match in signature
-		log.Debug().Msgf("searchig for match: '%s' weak:[%d])", string(buf), weak)
+		log.Debug().Msgf("searching for match: '%s' weak:[%d])", string(buf), weak)
 		match, indx := FindMatch(weak, buf, hasher, sig)
 		if match {
 			log.Debug().Msgf("Match for '%s' weak[%d]", buf, weak)
@@ -80,7 +80,7 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 				buf = buf[1:]
 				for len(buf) > 0 {
 					weak := r.Calculate(buf)
-					log.Debug().Msgf("searchig for match: '%s' weak:[%d])", string(buf), weak)
+					log.Debug().Msgf("searching for match: '%s' weak:[%d])", string(buf), weak)
 					match, indx := FindMatch(weak, buf, hasher, sig)
 					if match {
 						log.Debug().Msgf("Match for '%s' %d", buf, weak)
