@@ -46,7 +46,7 @@ func main() {
 				return err
 			}
 			opW := &operation.OpWriter{}
-			err = delta.Calculate(f1, sig, hasher, uint64(blockSize), opW)
+			err = delta.Calculate2(f1, sig, hasher, uint64(blockSize), opW)
 			if err != nil {
 				log.Error().Err(err)
 				return err

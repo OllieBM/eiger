@@ -134,26 +134,48 @@ func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSi
 	var weak uint32
 	var n int
 	var err error
+
+	// err = nil
+	// for err == nil {
+	// 	// read chunk
+	// 	// read byte
+	// 	if !rolling {
+	// 		n, err = reader.Read(buf)
+	// 		weak = r.Calculate(buf)
+	// 	} else {
+	// 		var b byte
+	// 		b, err = reader.ReadByte()
+	// 		prevC = buf[0]
+	// 		buf = append(buf[1:], b)
+	// 		weak = r.Roll(prevC, one[0])
+	// 	}
+
+	// }
 	// read either [1]byte or [blockSize]byte from reader
 	// until an error occurs
 	for n, err = reader.Read(buf); err == nil; n, err = reader.Read(buf) {
 		if !rolling {
 			weak = r.Calculate(buf)
 		} else {
-			weak = r.Roll(prevC, buf[len(buf)-1])
+			chunk = append(chunk[1:], one...)
+			weak = r.Roll(prevC, one[0])
+
 		}
 
-		log.Debug().Msgf("finding match for %s [%d]", buf, weak)
-		match, indx := FindMatch(weak, buf, hasher, sig)
+		//log.Debug().Msgf("finding match for %s [%d]", chunk, weak)
+		match, indx := FindMatch(weak, chunk, hasher, sig)
 		if match {
+			log.Debug().Msgf("Match for '%s' weak[%d]", chunk, weak)
 			rolling = false
 			buf = chunk // read chunk
 			out.AddMatch(uint64(indx))
 		} else {
+
 			rolling = true
 			prevC = buf[0]
 			buf = one
-			out.AddMiss(buf[0])
+			log.Debug().Msgf("Miss for '%s' weak[%d] adding %s", string(chunk), weak, string(prevC))
+			out.AddMiss(prevC)
 		}
 	}
 	// tail
