@@ -153,13 +153,21 @@ func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSi
 	// }
 	// read either [1]byte or [blockSize]byte from reader
 	// until an error occurs
+
+	for {
+		// read four
+		// read one
+		break
+	}
+
 	for n, err = reader.Read(buf); err == nil; n, err = reader.Read(buf) {
 		if !rolling {
+			// read four
 			weak = r.Calculate(buf)
 		} else {
+			// read one
 			chunk = append(chunk[1:], one...)
 			weak = r.Roll(prevC, one[0])
-
 		}
 
 		//log.Debug().Msgf("finding match for %s [%d]", chunk, weak)
@@ -172,7 +180,7 @@ func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSi
 		} else {
 
 			rolling = true
-			prevC = buf[0]
+			prevC = chunk[0]
 			buf = one
 			log.Debug().Msgf("Miss for '%s' weak[%d] adding %s", string(chunk), weak, string(prevC))
 			out.AddMiss(prevC)
