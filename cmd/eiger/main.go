@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/md5"
 	"os"
+	"strings"
 
 	"github.com/OllieBM/eiger/pkg/delta"
 	"github.com/OllieBM/eiger/pkg/operation"
 	"github.com/OllieBM/eiger/pkg/signature"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -17,14 +19,18 @@ import (
 // create delta for file two
 
 func main() {
-	var file1, file2 string
+	var file1, file2, loglevel string
 	var blockSize uint32
 	// does not use the general cobra layout,
 	// but still makes passing in values easier
 	var rootCmd = &cobra.Command{
 		Short: "Create a diff of two files",
 		Use: `Diff File1 against File2 creating a diff file with instructions on how to transform File1 into File2
-		eiger-diff --file1 <File1> --file2 <File2>`, //eiger-diff --file1 <File1> --file2 <File2>``,
+		eiger-diff --file1 <File1> --file2 <File2> 
+		Additional flags :
+		
+		--blocksize|b the size of a block to use default = 5
+		--loglevel|l {DEBUG|INFO|ERROR}`, //eiger-diff --file1 <File1> --file2 <File2>``,
 		//Args: cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -64,7 +70,19 @@ func main() {
 	rootCmd.Flags().StringVarP(&file2, "file2", "", "", "The second file to read")
 	rootCmd.MarkFlagRequired("file1") // if not supplied will panic
 	rootCmd.MarkFlagRequired("file2") // if not supplied will panic
-	rootCmd.Flags().Uint32VarP(&blockSize, "blocksize", "b", 32, "the size of chunks in bytes to use when matching data from the files")
+	rootCmd.Flags().Uint32VarP(&blockSize, "blocksize", "b", 5, "the size of chunks in bytes to use when matching data from the files")
+	rootCmd.Flags().StringVarP(&loglevel, "loglevel", "l", "ERROR", "log level to display")
+
+	// left out some log levels
+	switch strings.ToUpper(loglevel) {
+	case "DEBUG":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "INFO":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "ERROR":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	}
+
 	// TODO: add in stream output
 	if err := rootCmd.Execute(); err != nil {
 		log.Error().Err(err)

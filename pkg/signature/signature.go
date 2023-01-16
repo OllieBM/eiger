@@ -19,6 +19,7 @@ type Block struct {
 // 	hashtable    map[uint32][]Block
 // 	strongHasher hash.Hash
 // }
+
 type Signature map[uint32][]Block
 
 func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, error) {
@@ -39,7 +40,7 @@ func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, 
 			}
 			eof = true
 		}
-		// fmt.Println(buf)
+
 		if n == 0 {
 			continue
 		}
