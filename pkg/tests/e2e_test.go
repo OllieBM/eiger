@@ -30,12 +30,12 @@ func TestE2E(t *testing.T) {
 	// create a signature
 
 	hasher := md5.New()
-	sig, err := signature.Calculate(strings.NewReader(old), 5, hasher)
+	sig, err := signature.New(strings.NewReader(old), 5, hasher)
 	require.NoError(t, err)
 	require.NotNil(t, sig)
 
 	opW = &operation.OpWriter{}
-	err = delta.Calculate(strings.NewReader(new), sig, hasher, 5, opW)
+	err = delta.Calculate(strings.NewReader(new), sig, opW)
 	require.NoError(t, err)
 
 	require.Equal(t, expected, opW.Operations())
@@ -111,7 +111,7 @@ func TestOutput(t *testing.T) {
 	for _, tc := range tcs {
 
 		hasher := md5.New()
-		sig, err := signature.Calculate(strings.NewReader(tc.source), 5, hasher)
+		sig, err := signature.New(strings.NewReader(tc.source), 5, hasher)
 		require.NoError(t, err)
 		require.NotNil(t, sig)
 

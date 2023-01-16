@@ -36,30 +36,30 @@ func main() {
 
 			f1, err := os.Open(file1)
 			if err != nil {
-				log.Error().Err(err)
+				log.Error().Err(err).Msgf("could not open file %s", file1)
+				return err
 			}
 			f2, err := os.Open(file2)
 			if err != nil {
-				log.Error().Err(err)
+				log.Error().Err(err).Msgf("could not open file %s", file2)
+				return err
 			}
 
 			// create the strong hasher
 			hasher := md5.New()
 
-			sig, err := signature.Calculate(f2, int(blockSize), hasher)
+			sig, err := signature.New(f2, int(blockSize), hasher)
 			if err != nil {
-				log.Error().Err(err)
 				return err
 			}
 			opW := &operation.OpWriter{}
-			err = delta.Calculate2(f1, sig, hasher, uint64(blockSize), opW)
+			_ = sig
+			err = delta.Calculate(f1, nil, opW)
 			if err != nil {
-				log.Error().Err(err)
 				return err
 			}
 			err = opW.Flush(os.Stdout)
 			if err != nil {
-				log.Error().Err(err)
 				return err
 			}
 			return nil
@@ -73,6 +73,7 @@ func main() {
 	rootCmd.Flags().Uint32VarP(&blockSize, "blocksize", "b", 5, "the size of chunks in bytes to use when matching data from the files")
 	rootCmd.Flags().StringVarP(&loglevel, "loglevel", "l", "ERROR", "log level to display")
 
+	log.Logger = log.With().Caller().Logger()
 	// left out some log levels
 	switch strings.ToUpper(loglevel) {
 	case "DEBUG":

@@ -2,7 +2,7 @@ package delta
 
 import (
 	"bufio"
-	"bytes"
+	"errors"
 	"hash"
 	"io"
 
@@ -12,14 +12,27 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSize uint64, out *operation.OpWriter) error {
+var (
+	ErrInvalidSignature = errors.New("Nil signature passed to delta.Calculate")
+	ErrInvalidOpWriter  = errors.New("Nil OpWriter passed to delta.Calculate")
+)
+
+func Calculate(in io.Reader, sig *signature.Signature, out *operation.OpWriter) error {
+	if sig == nil {
+		log.Error().Err(ErrInvalidSignature)
+		return ErrInvalidSignature
+	}
+	if out == nil {
+		log.Error().Err(ErrInvalidOpWriter)
+		return ErrInvalidOpWriter
+	}
 
 	reader := bufio.NewReader(in)
 	r := rolling_checksum.New()
 
 	eof := false
 	rolling := false
-	buf := make([]byte, blockSize)
+	buf := make([]byte, sig.BlockSize())
 	var n int
 	var err error
 	for !eof {
@@ -62,7 +75,7 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 
 		// look for a match in signature
 		log.Debug().Msgf("searching for match: '%s' weak:[%d])", string(buf), weak)
-		match, indx := FindMatch(weak, buf, hasher, sig)
+		match, indx := sig.FindMatch(weak, buf)
 		if match {
 			log.Debug().Msgf("Match for '%s' weak[%d]", buf, weak)
 			out.AddMatch(uint64(indx))
@@ -81,7 +94,7 @@ func Calculate(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSiz
 				for len(buf) > 0 {
 					weak := r.Calculate(buf)
 					log.Debug().Msgf("searching for match: '%s' weak:[%d])", string(buf), weak)
-					match, indx := FindMatch(weak, buf, hasher, sig)
+					match, indx := sig.FindMatch(weak, buf)
 					if match {
 						log.Debug().Msgf("Match for '%s' %d", buf, weak)
 						out.AddMatch(uint64(indx))
@@ -135,31 +148,11 @@ func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSi
 	var n int
 	var err error
 
-	// err = nil
-	// for err == nil {
-	// 	// read chunk
-	// 	// read byte
-	// 	if !rolling {
-	// 		n, err = reader.Read(buf)
-	// 		weak = r.Calculate(buf)
-	// 	} else {
-	// 		var b byte
-	// 		b, err = reader.ReadByte()
-	// 		prevC = buf[0]
-	// 		buf = append(buf[1:], b)
-	// 		weak = r.Roll(prevC, one[0])
-	// 	}
-
-	// }
 	// read either [1]byte or [blockSize]byte from reader
 	// until an error occurs
 
-	for {
-		// read four
-		// read one
-		break
-	}
-
+	// read buf amount of bytes,
+	// it is either a buffer of 1 or blocksize
 	for n, err = reader.Read(buf); err == nil; n, err = reader.Read(buf) {
 		if !rolling {
 			// read four
@@ -171,7 +164,7 @@ func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSi
 		}
 
 		//log.Debug().Msgf("finding match for %s [%d]", chunk, weak)
-		match, indx := FindMatch(weak, chunk, hasher, sig)
+		match, indx := sig.FindMatch(weak, chunk)
 		if match {
 			log.Debug().Msgf("Match for '%s' weak[%d]", chunk, weak)
 			rolling = false
@@ -191,7 +184,7 @@ func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSi
 	if n != 0 {
 		for len(buf) > 0 {
 			weak = r.Calculate(buf)
-			match, indx := FindMatch(weak, buf, hasher, sig)
+			match, indx := sig.FindMatch(weak, buf)
 			if match {
 				out.AddMatch(uint64(indx))
 				break
@@ -209,18 +202,4 @@ func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSi
 		}
 	}
 	return nil
-}
-
-func FindMatch(weak uint32, buf []byte, hasher hash.Hash, sig signature.Signature) (bool, int) {
-	hasher.Reset()
-	if hashes, ok := sig[weak]; ok {
-		_, _ = hasher.Write(buf)
-		strong := hasher.Sum(nil)
-		for _, h := range hashes {
-			if bytes.Compare(strong, h.Strong) == 0 {
-				return true, h.Index
-			}
-		}
-	}
-	return false, 0
 }

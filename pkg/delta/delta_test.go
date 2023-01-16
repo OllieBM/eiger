@@ -23,7 +23,7 @@ func TestFindMatch(t *testing.T) {
 	source := "Hello"
 	//target := "HelloWorld"
 	hasher := md5.New()
-	sig, err := signature.Calculate(strings.NewReader(source), 5, hasher)
+	sig, err := signature.New(strings.NewReader(source), 5, hasher)
 	hasher.Reset()
 	require.NoError(t, err)
 	require.NotNil(t, sig)
@@ -40,7 +40,7 @@ func TestCalculate(t *testing.T) {
 
 	source := "Hello"
 	target := "HelloWorld"
-	sig, err := signature.Calculate(strings.NewReader(source), 5, md5.New())
+	sig, err := signature.New(strings.NewReader(source), 5, md5.New())
 	require.NoError(t, err)
 	require.NotNil(t, sig)
 
@@ -55,7 +55,7 @@ func TestCalculate2(t *testing.T) {
 
 	source := "Hello"
 	target := "HelloWorld"
-	sig, err := signature.Calculate(strings.NewReader(source), 5, md5.New())
+	sig, err := signature.New(strings.NewReader(source), 5, md5.New())
 	require.NoError(t, err)
 	require.NotNil(t, sig)
 

@@ -17,16 +17,16 @@ func TestCreateSignature(t *testing.T) {
 	s := len(in) / 2
 	hasher := md5.New() // TODO: use mockgen tests
 
-	sig, err := Calculate(reader, s, hasher)
+	sig, err := New(reader, s, hasher)
 	require.NoError(t, err)
-	require.Len(t, sig, 2) // assumes the weak hashes don't cause collision
+	require.Len(t, sig.m, 2) // assumes the weak hashes don't cause collision
 
 	weakHasher := rolling_checksum.New()
 	weak := weakHasher.Calculate([]byte(in[0:s]))
-	require.Contains(t, sig, weak)
-	require.Len(t, sig[weak], 1)
+	require.Contains(t, sig.m, weak)
+	require.Len(t, sig.m[weak], 1)
 	weak = weakHasher.Calculate([]byte(in[s:]))
-	require.Contains(t, sig, weak)
-	require.Len(t, sig[weak], 1)
+	require.Contains(t, sig.m, weak)
+	require.Len(t, sig.m[weak], 1)
 
 }

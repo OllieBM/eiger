@@ -2,6 +2,7 @@ package signature
 
 import (
 	"bufio"
+	"bytes"
 	"hash"
 	"io"
 
@@ -20,15 +21,21 @@ type Block struct {
 // 	strongHasher hash.Hash
 // }
 
-type Signature map[uint32][]Block
+type hashtable map[uint32][]Block
 
-func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, error) {
+type Signature struct {
+	m            hashtable
+	blockSize    int
+	strongHasher hash.Hash
+}
+
+func New(in io.Reader, blockSize int, strongHasher hash.Hash) (*Signature, error) {
 
 	reader := bufio.NewReader(in)
 	buf := make([]byte, blockSize)
 
 	rc := rolling_checksum.New()
-	signature := make(Signature)
+	m := make(hashtable)
 	eof := false
 	block_index := 0
 	for !eof {
@@ -60,10 +67,34 @@ func Calculate(in io.Reader, blockSize int, strongHasher hash.Hash) (Signature, 
 		log.Debug().Msgf("adding signature: '%s' weak:[%d])", string(buf), weak)
 		// one weak hash could correspond to several strong hashes
 		// so we can keep a list
-		signature[weak] = append(signature[weak], Block{Index: block_index, Strong: strong})
+		m[weak] = append(m[weak], Block{Index: block_index, Strong: strong})
 
 		block_index++
 
 	}
-	return signature, nil
+
+	return &Signature{
+		m:            m,
+		blockSize:    blockSize,
+		strongHasher: strongHasher,
+	}, nil
+
+}
+
+func (s *Signature) FindMatch(weak uint32, buf []byte) (bool, int) {
+	s.strongHasher.Reset()
+	if hashes, ok := s.m[weak]; ok {
+		_, _ = s.strongHasher.Write(buf)
+		strong := s.strongHasher.Sum(nil)
+		for _, h := range hashes {
+			if bytes.Compare(strong, h.Strong) == 0 {
+				return true, h.Index
+			}
+		}
+	}
+	return false, 0
+}
+
+func (s Signature) BlockSize() int {
+	return s.blockSize
 }
