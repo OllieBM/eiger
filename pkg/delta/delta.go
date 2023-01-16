@@ -3,7 +3,6 @@ package delta
 import (
 	"bufio"
 	"errors"
-	"hash"
 	"io"
 
 	"github.com/OllieBM/eiger/pkg/operation"
@@ -132,20 +131,29 @@ func Calculate(in io.Reader, sig *signature.Signature, out *operation.OpWriter) 
 // Calculate2 will generate a delta between 'in' and the signature file
 // in should be the 'leader' file and the signature file should be based
 // on the 'follower' file.
-func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSize uint64, out *operation.OpWriter) error {
+func Calculate2(in io.Reader, sig *signature.Signature, out *operation.OpWriter) error {
+	if sig == nil {
+		log.Error().Err(ErrInvalidSignature)
+		return ErrInvalidSignature
+	}
+	if out == nil {
+		log.Error().Err(ErrInvalidOpWriter)
+		return ErrInvalidOpWriter
+	}
 
 	reader := bufio.NewReader(in)
 	r := rolling_checksum.New()
 
-	chunk := make([]byte, blockSize)
-	one := make([]byte, 1)
-	buf := chunk // shadow the underlying buffer
+	chunk := make([]byte, sig.BlockSize())
+	//one := make([]byte, 1)
+	//buf := chunk // shadow the underlying buffer
 
 	rolling := false
 
-	var prevC byte
-	var weak uint32
 	var n int
+	var b, prevC byte
+	var weak uint32
+
 	var err error
 
 	// read either [1]byte or [blockSize]byte from reader
@@ -153,53 +161,45 @@ func Calculate2(in io.Reader, sig signature.Signature, hasher hash.Hash, blockSi
 
 	// read buf amount of bytes,
 	// it is either a buffer of 1 or blocksize
-	for n, err = reader.Read(buf); err == nil; n, err = reader.Read(buf) {
+	rolling = false
+	for err == nil {
 		if !rolling {
-			// read four
-			weak = r.Calculate(buf)
+			n, err = reader.Read(chunk)
+			weak = r.Calculate(chunk)
+			chunk = chunk[:n]
+			if n == 0 {
+				break
+			}
+
 		} else {
-			// read one
-			chunk = append(chunk[1:], one...)
-			weak = r.Roll(prevC, one[0])
+			b, err = reader.ReadByte()
+			if err != nil {
+				// don't iterate on a default value byte
+				break
+			}
+			chunk = append(chunk[1:], b)
+			weak = r.Roll(prevC, b)
 		}
 
-		//log.Debug().Msgf("finding match for %s [%d]", chunk, weak)
 		match, indx := sig.FindMatch(weak, chunk)
 		if match {
 			log.Debug().Msgf("Match for '%s' weak[%d]", chunk, weak)
 			rolling = false
-			buf = chunk // read chunk
 			out.AddMatch(uint64(indx))
 		} else {
-
 			rolling = true
 			prevC = chunk[0]
-			buf = one
 			log.Debug().Msgf("Miss for '%s' weak[%d] adding %s", string(chunk), weak, string(prevC))
 			out.AddMiss(prevC)
-		}
-	}
-	// tail
-	// TODO: wrap up into a closure or function to streamline code
-	if n != 0 {
-		for len(buf) > 0 {
-			weak = r.Calculate(buf)
-			match, indx := sig.FindMatch(weak, buf)
-			if match {
-				out.AddMatch(uint64(indx))
-				break
-			} else {
-				prevC = buf[0]
-				out.AddMiss(prevC)
-				buf = buf[1:]
-			}
 		}
 	}
 
 	if err != nil {
 		if err != io.EOF {
+			log.Error().Err(err)
 			return err
 		}
+
 	}
 	return nil
 }

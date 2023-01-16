@@ -53,11 +53,12 @@ func main() {
 				return err
 			}
 			opW := &operation.OpWriter{}
-			_ = sig
-			err = delta.Calculate(f1, nil, opW)
+			err = delta.Calculate2(f1, sig, opW)
 			if err != nil {
+				log.Error().Err(err).Msgf("error calculating delta")
 				return err
 			}
+			log.Info().Msg("flushing")
 			err = opW.Flush(os.Stdout)
 			if err != nil {
 				return err
