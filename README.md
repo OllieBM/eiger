@@ -1,3 +1,32 @@
+
+## Build and Run
+
+```
+#run using go
+go run main.go ...<usage>
+
+# build an executable 
+go build -o bin/eiger-diff
+
+./bin/eiger-diff ...<usage>
+
+```
+
+### Usage
+
+```
+Diff File1 against File2 creating a diff file with instructions on how to transform File1 into File2
+        eiger-diff --file1 <File1> --file2 <File2> [flags]
+
+Flags:
+  -b, --blocksize uint32   the size of chunks in bytes to use when matching data from the files (default 5)
+      --file1 string       The first file to read
+      --file2 string       The second file to read
+  -h, --help               help for Diff
+  -l, --loglevel string    log level to display {DEBUG|INFO|ERROR} default=ERROR (default "ERROR")
+```
+
+
 # Rolling Hash Algorithm
 _Spec v4 (2021-03-09)_
 

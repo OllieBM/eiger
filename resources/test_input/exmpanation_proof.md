@@ -61,3 +61,37 @@ leader iteration:
 
 with a different chunk size we can get different results
 
+
+
+### follower to leader
+follower:
+12346789\n
+12346789\n
+12346789\n
+12346789\n
+leader
+123456789\n
+123456789\n
+123456789\n
+123456789\n
+
+we want to add 1 5 to every line
+then re use blocks 0, & 1?
+
+
+
+### leader to follower
+follower:
+12346789\n
+12346789\n
+12346789\n
+12346789\n
+leader
+123456789\n
+123456789\n
+123456789\n
+123456789\n
+// since we don't have a removal option
+we want to read chunks and add in as few characters as possible
+so we can use chunk 0 [1:4], add six and use another chunk (BLOCK_4) [789\n]
+

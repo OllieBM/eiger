@@ -166,15 +166,16 @@ func Calculate2(in io.Reader, sig *signature.Signature, out *operation.OpWriter)
 		if !rolling {
 			n, err = reader.Read(chunk)
 			weak = r.Calculate(chunk)
+			log.Debug().Msgf("read %s", chunk)
 			chunk = chunk[:n]
 			if n == 0 {
 				break
 			}
 
 		} else {
+
 			b, err = reader.ReadByte()
 			if err != nil {
-				// don't iterate on a default value byte
 				break
 			}
 			chunk = append(chunk[1:], b)
