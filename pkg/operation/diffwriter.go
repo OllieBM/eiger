@@ -9,19 +9,16 @@ import (
 
 var ErrClosed = errors.New("DiffWriter is closed")
 
-// const MaxOpLength =  1 << 16 // maximum amount of data one operation can be
-// TODO: cap size of previous operation
 // TODO: add in a way for MatchOperations to contain multi-block references (start, end) vs []index
 
 type DiffWriter interface {
-	AddMatch(index uint64) // index, length
+	AddMatch(index uint64) // index, length for range?
 	AddMiss(b byte)
 	Flush() error
-	//io.Closer
 }
 
 type customDiffWriter struct {
-	writer io.Writer  // not sure
+	writer io.Writer  // not sure if we should include a 'closer'
 	mu     sync.Mutex // so we can flush the buffer
 	prevOp *Operation // the last operation, is not written out until there is another operation of it is flushed
 }

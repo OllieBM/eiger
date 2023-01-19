@@ -1,11 +1,33 @@
 package operation
 
 import (
+	"io"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+type StringWriteCloser struct {
+	strings.Builder
+	closed bool
+}
+
+func (s *StringWriteCloser) Write(p []byte) (int, error) {
+	if s.closed {
+		return nil, ErrClosed
+	}
+	return s.Write(p)
+}
+func (s *StringWriteCloser) Close() error {
+	s.closed = true
+	return nil
+}
+func NewStringWriteCloser() io.WriteCloser {
+	return &StringWriteCloser{
+		closed: false,
+	}
+}
 
 func TestNewDiffWriter(t *testing.T) {
 

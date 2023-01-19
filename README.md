@@ -47,14 +47,19 @@ A library that does a similar thing is [rdiff](https://linux.die.net/man/1/rdiff
 - Well-written unit tests function well in describing the operation, no UI necessary.
 
 ## Checklist
-- [ ] 1. Input/output operations are separated from the calculations
-- [ ] 2. detects chunk changes and/or additions
-- [ ] 3. detects chunk removals
-- [ ] 4. detects additions between chunks with shifted original chunks
-
+- [X] Input/output operations are separated from the calculations
+- [X] detects chunk changes and/or additions
+  - moved chunks, and additions will be in the delta
+  - TODO: link to testcase
+- [X] detects chunk removals
+  - any chunk in source that is not in target will not be included in the delta
+- [ ] detects additions between chunks with shifted original chunks
+  - delta will contain instructions on creating target using chunks, and additional data
+  - TODO: link to testcase
 
 
 TODO:
+- Should be able to recognize changes between chunks. Only the exact differing locations should be added to the delta.
     - [ ] calculation functions
     - [ ] break input into chunks
     - [ ] detect chunk addition
