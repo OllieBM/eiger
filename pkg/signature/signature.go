@@ -27,14 +27,14 @@ type Signature struct {
 	m            hashtable
 	blockSize    int
 	strongHasher hash.Hash
+	rc           rolling_checksum.RollingChecksum
 }
 
-func New(in io.Reader, blockSize int, strongHasher hash.Hash) (*Signature, error) {
+func New(in io.Reader, blockSize int, strongHasher hash.Hash, rc rolling_checksum.RollingChecksum) (*Signature, error) {
 
 	reader := bufio.NewReader(in)
 	buf := make([]byte, blockSize)
 
-	rc := rolling_checksum.New()
 	m := make(hashtable)
 	eof := false
 	block_index := 0
@@ -42,6 +42,7 @@ func New(in io.Reader, blockSize int, strongHasher hash.Hash) (*Signature, error
 		n, err := reader.Read(buf)
 		if err != nil {
 			if err != io.EOF {
+
 				log.Error().Err(err).Msg("could not read from input")
 				return nil, err
 			}

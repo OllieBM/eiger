@@ -45,13 +45,8 @@ func (w *onlyDifferencesWriter) AddMatch(index uint64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	fmt.Println("MATCH AT ", index, w.blockOffset)
 	w.flush() // flush on every add right now, since we don't concat them
 
-	// if w.blockOffset == index {
-	// 	// this is a match at the correct index. so we ignore it
-	// 	return
-	// } else
 	if w.blockOffset != index {
 		// check the difference
 		if index < w.blockOffset {
@@ -65,19 +60,13 @@ func (w *onlyDifferencesWriter) AddMatch(index uint64) {
 			// TODO: w.remove() func
 			for i := w.blockOffset; i < index; i++ {
 				w.flush()
-				fmt.Println("MISSING INDEX ", index, w.blockOffset)
 				w.prevOp = &Operation{operation: OpRemoval, blockIndex: i}
 			}
-			//w.blockOffset = index
+
 		}
-		//w.blockOffset = index
-		// index == w.blockOffset wont be hit
-	} else {
-		fmt.Println("MATCHING INDEX ", index, w.blockOffset)
 	}
 
 	w.blockOffset = index + 1 // expect the next index
-	// its a  match at a different offset
 
 }
 func (w *onlyDifferencesWriter) AddMissingIndexes(indexes []uint64) {
@@ -104,14 +93,15 @@ func (w *onlyDifferencesWriter) AddMiss(b byte) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	fmt.Println("miss at ", w.blockOffset)
 	if w.prevOp == nil || w.prevOp.operation != OpMiss {
 		// last op was different, flush it
-		w.flush()
+		w.flush() // send last op
 		// create new op
 		w.prevOp = &Operation{operation: OpMiss, data: []byte{b}, offset: w.blockOffset}
 		return
 	}
+
+	// it wasnt nil AND wasn't a miss
 	w.prevOp.data = append(w.prevOp.data, b)
 
 }
@@ -128,7 +118,7 @@ func (w *onlyDifferencesWriter) flush() (err error) {
 
 	if w.prevOp != nil {
 		if w.prevOp.operation == OpMiss {
-			_, err = fmt.Fprintf(w.writer, "+ @%d %d %s\n", w.prevOp.offset, len(w.prevOp.data), string(w.prevOp.data))
+			_, err = fmt.Fprintf(w.writer, "+ @%d %d %s\n", w.prevOp.offset, len(w.prevOp.data), w.prevOp.data)
 		} else if w.prevOp.operation == OpMatch {
 			_, err = fmt.Fprintf(w.writer, "= @%d BLOCK_%d\n", w.prevOp.offset, w.prevOp.blockIndex)
 		} else if w.prevOp.operation == OpRemoval {
