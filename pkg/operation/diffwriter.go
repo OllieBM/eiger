@@ -1,10 +1,13 @@
 package operation
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"sync"
 )
+
+var ErrClosed = errors.New("DiffWriter is closed")
 
 // const MaxOpLength =  1 << 16 // maximum amount of data one operation can be
 // TODO: cap size of previous operation
@@ -13,19 +16,21 @@ import (
 type DiffWriter interface {
 	AddMatch(index uint64) // index, length
 	AddMiss(b byte)
-	//io.WriteCloser
-	io.Closer
-	//Flush()
+	Flush() error
+	//io.Closer
 }
 
 type customDiffWriter struct {
-	writer io.WriteCloser // not sure if we should close it
-	mu     sync.Mutex     // so we can flush the buffer
-	prevOp *Operation     // the last operation, is not written out until there is another operation of it is flushed
+	writer io.Writer  // not sure
+	mu     sync.Mutex // so we can flush the buffer
+	prevOp *Operation // the last operation, is not written out until there is another operation of it is flushed
 }
 
 func NewDiffWriter(out io.Writer) DiffWriter {
-	return &customDiffWriter{}
+	return &customDiffWriter{
+		writer: out,
+		prevOp: nil,
+	}
 }
 
 // old |1234|abcd|5678  [we no longer have abcd]
@@ -38,19 +43,17 @@ func NewDiffWriter(out io.Writer) DiffWriter {
 func (w *customDiffWriter) AddMatch(index uint64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	// if w.prevOp.operation == OpMiss {
-	// 	Flush()
-	// }
-	w.Flush() // flush on every add right now, since we don't concat them
+
+	w.flush() // flush on every add right now, since we don't concat them
 	w.prevOp = &Operation{operation: OpMatch, blockIndex: index}
 }
 
 func (w *customDiffWriter) AddMiss(b byte) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if w.prevOp.operation != OpMiss {
+	if w.prevOp == nil || w.prevOp.operation != OpMiss {
 		// last op was different, flush it
-		w.Flush()
+		w.flush()
 		// create new op
 		w.prevOp = &Operation{operation: OpMiss, data: []byte{b}}
 		return
@@ -60,8 +63,14 @@ func (w *customDiffWriter) AddMiss(b byte) {
 }
 
 func (w *customDiffWriter) Flush() (err error) {
+
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.flush()
+	return nil
+}
+
+func (w *customDiffWriter) flush() (err error) {
 
 	if w.prevOp != nil {
 		if w.prevOp.operation == OpMiss {
@@ -73,12 +82,18 @@ func (w *customDiffWriter) Flush() (err error) {
 			return err
 		}
 	}
+	w.prevOp = nil
 	return nil
 }
 
-func (w *customDiffWriter) Close() error {
-	if err := w.Flush(); err != nil {
-		return err
-	}
-	return w.writer.Close()
-}
+// func (w *customDiffWriter) Close() error {
+// 	if w.closed {
+// 		return ErrClosed
+// 	}
+// 	w.mu.Lock()
+// 	defer w.mu.Unlock()
+// 	if err := w.flush(); err != nil {
+// 		return err
+// 	}
+// 	return w.writer.Close()
+// }

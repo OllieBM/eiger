@@ -2,8 +2,8 @@ package rolling_checksum
 
 // see https://www.rfc-editor.org/rfc/rfc1950
 // and the adler32 algorithm to better understand these values
-// const MODULO_FACTOR = 65521 // 65521 is the largest prime that can be stored in a 16-bit unsigned integer
-const MODULO_FACTOR = 2147483647
+// any large prime would do, if the prime is changed, then the test data would need to be updated
+const MODULO_FACTOR = 65521 // 65521 is the largest prime that can be stored in a 16-bit unsigned integer
 
 type RollingChecksum interface {
 	Calculate([]byte) uint32

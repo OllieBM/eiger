@@ -131,7 +131,7 @@ func Calculate(in io.Reader, sig *signature.Signature, out *operation.OpWriter) 
 // Calculate2 will generate a delta between 'in' and the signature file
 // in should be the 'leader' file and the signature file should be based
 // on the 'follower' file.
-func Calculate2(in io.Reader, sig *signature.Signature, out *operation.OpWriter) error {
+func Calculate2(in io.Reader, sig *signature.Signature, out operation.DiffWriter) error {
 	if sig == nil {
 		log.Error().Err(ErrInvalidSignature)
 		return ErrInvalidSignature

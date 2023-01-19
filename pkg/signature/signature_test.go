@@ -30,3 +30,19 @@ func TestCreateSignature(t *testing.T) {
 	require.Len(t, sig.m[weak], 1)
 
 }
+
+func TestFindMatch(t *testing.T) {
+	source := "Hello"
+	hasher := md5.New()
+	sig, err := New(strings.NewReader(source), 5, hasher)
+	hasher.Reset()
+	require.NoError(t, err)
+	require.NotNil(t, sig)
+	require.Len(t, sig.m, 1)
+
+	weak := rolling_checksum.New().Calculate([]byte(source))
+	hasher.Reset()
+	found, indx := sig.FindMatch(weak, []byte(source))
+	require.True(t, found)
+	require.Equal(t, 0, indx)
+}

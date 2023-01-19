@@ -13,6 +13,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// https://github.com/madler/zlib/blob/master/adler32.c
+// NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
+// added here for future implementation of rolling adler32
 const NMAX = 5552
 
 var (
@@ -45,14 +48,16 @@ var DiffCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		opW := &operation.OpWriter{}
-		err = delta.Calculate2(target, sig, opW)
+		// opW := &operation.OpWriter{}
+		diffW := operation.NewDiffWriter(os.Stdout)
+		err = delta.Calculate2(target, sig, diffW)
 		if err != nil {
 			log.Error().Err(err).Msgf("error calculating delta")
 			return err
 		}
 		log.Info().Msg("flushing")
-		err = opW.Flush(os.Stdout)
+		// err = diffW.Output(os.Stdout)
+		err = diffW.Flush() // should be somethign like close
 		if err != nil {
 			return err
 		}
@@ -62,14 +67,10 @@ var DiffCmd = &cobra.Command{
 
 func init() {
 
-	// add flags to the command
-	//DiffCmd.Flags().StringVarP(&file1, "file1", "", "", "The source file to read")
-	//DiffCmd.Flags().StringVarP(&file2, "file2", "", "", "The target file to read")
-	// TODO: add in option to write to a file
-	//DiffCmd.MarkFlagRequired("file1") // if not supplied will panic
-	//DiffCmd.MarkFlagRequired("file2") // if not supplied will panic
 	DiffCmd.Flags().Uint32VarP(&blockSize, "blocksize", "b", 5, "the size of chunks in bytes to use when matching data from the files max is 0 < b <=5552")
-	// 5552 is the maximum value that the rolling checksum algorithm will work for
+	// 5552 is the maximum value that the rolling checksum algorithm will work for certain algorithms,
+	// so we use that as a sensible max
+	// /* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
 	DiffCmd.Flags().StringVarP(&loglevel, "loglevel", "l", "ERROR", "log level to display {DEBUG|INFO|ERROR} default=ERROR")
 
 }
@@ -78,6 +79,7 @@ func Execute() {
 
 	log.Logger = log.With().Caller().Logger()
 	// left out some log levels
+
 	switch strings.ToUpper(loglevel) {
 	case "DEBUG":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -85,8 +87,11 @@ func Execute() {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	case "ERROR":
 		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	default:
+		panic("what")
 	}
-	if blockSize > NMAX || 0 < blockSize {
+
+	if blockSize > NMAX || blockSize <= 0 {
 		log.Error().Msg("invalid parameter for Blocksize")
 	}
 

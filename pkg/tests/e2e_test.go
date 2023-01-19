@@ -116,7 +116,7 @@ func TestOutput(t *testing.T) {
 		require.NotNil(t, sig)
 
 		opW := &operation.OpWriter{}
-		err = delta.Calculate(strings.NewReader(tc.target), sig, hasher, 5, opW)
+		err = delta.Calculate(strings.NewReader(tc.target), sig, opW)
 		require.NoError(t, err)
 
 		out := &strings.Builder{}

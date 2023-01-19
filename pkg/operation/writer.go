@@ -66,24 +66,23 @@ func (w *OpWriter) Output(out io.Writer) error {
 	return nil
 }
 
-// Try and write a diff
-// empties the internal buffer
-func (w *OpWriter) Flush(out io.Writer) error {
-	var err error
+// // Try and write a diff
+// // empties the internal buffer
+// func (w *OpWriter) Flush(out io.Writer) error {
+// 	var err error
 
-	// for _, op := range w.ops {
-	for len(w.ops) > 0 {
-		op := w.ops[0]
-		if op.operation == OpMiss {
-			_, err = fmt.Fprintf(out, "+ %d %s\n", len(op.data), string(op.data))
-		} else if op.operation == OpMatch {
-			_, err = fmt.Fprintf(out, "= BLOCK_%d\n", op.blockIndex)
-		}
-		if err != nil {
-			return err
-		}
-		w.ops = w.ops[1:]
-	}
-	w.ops = nil
-	return nil
-}
+// 	for len(w.ops) > 0 {
+// 		op := w.ops[0]
+// 		if op.operation == OpMiss {
+// 			_, err = fmt.Fprintf(out, "+ %d %s\n", len(op.data), string(op.data))
+// 		} else if op.operation == OpMatch {
+// 			_, err = fmt.Fprintf(out, "= BLOCK_%d\n", op.blockIndex)
+// 		}
+// 		if err != nil {
+// 			return err
+// 		}
+// 		w.ops = w.ops[1:]
+// 	}
+// 	w.ops = nil
+// 	return nil
+// }
