@@ -13,6 +13,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const NMAX = 5552
+
 var (
 	loglevel  string
 	blockSize uint32
@@ -66,7 +68,8 @@ func init() {
 	// TODO: add in option to write to a file
 	//DiffCmd.MarkFlagRequired("file1") // if not supplied will panic
 	//DiffCmd.MarkFlagRequired("file2") // if not supplied will panic
-	DiffCmd.Flags().Uint32VarP(&blockSize, "blocksize", "b", 5, "the size of chunks in bytes to use when matching data from the files")
+	DiffCmd.Flags().Uint32VarP(&blockSize, "blocksize", "b", 5, "the size of chunks in bytes to use when matching data from the files max is 0 < b <=5552")
+	// 5552 is the maximum value that the rolling checksum algorithm will work for
 	DiffCmd.Flags().StringVarP(&loglevel, "loglevel", "l", "ERROR", "log level to display {DEBUG|INFO|ERROR} default=ERROR")
 
 }
@@ -82,6 +85,9 @@ func Execute() {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	case "ERROR":
 		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	}
+	if blockSize > NMAX || 0 < blockSize {
+		log.Error().Msg("invalid parameter for Blocksize")
 	}
 
 	if err := DiffCmd.Execute(); err != nil {

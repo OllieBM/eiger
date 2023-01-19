@@ -1,3 +1,6 @@
+# Eiger-Diff
+A diff application using a Rolling Hash Algorithm to create an instruction file with the transformations needed to convert one file to another.
+
 
 ## Build and Run
 
@@ -79,3 +82,32 @@ https://prettydiff.com/2/guide/unrelated_diff.xhtml
 1. convert a file into a signature
    1. signature 
   
+
+### Questions :
+`- Chunk size can be fixed or dynamic, but must be split to at least two chunks on any sufficiently sized data.`
+the tail end was something I found confusing to use, since sufficiently sized data can be hard to judge and the rolling checksums I have learned about all use modulo to prevent a hash value being too large, but it could still be possible to cause integer overflow on the operation, 
+
+255 is the largest value represented in a byte
+
+so we could have 
+
+255 * blocklength ...
+
+255 * 5552 * 5553/2 +5553
+
+255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
+
+
+
+10 * 5 +
+10 * 4 +
+10 * 3 +
+10 * 2 +
+10 * 1 =
+ == 150 
+ 10 * 5*(6)/2 = 150
+
+
+255 * 5552 * 5553/2 + 5553 * 65520 = 4294967295 <=  4294690200 (true)
+255 * 5553 * 5554/2 + 5554 * 65520 = 4296171735 <= 4294690200 (false)
+                                     4294690200
