@@ -20,12 +20,13 @@ const NMAX = 5552
 
 var (
 	loglevel  string
+	output    string // filename to output to
 	blockSize uint32
 )
 
 var DiffCmd = &cobra.Command{
 	Short: "Create a diff of two files",
-	Long:  "create a diff which can be used to convert a source file (File1) into a target file (File2)",
+	Long:  "Diff File1 against File2 creating a diff file with instructions on how to transform File1 into File2",
 	Use:   `diff File1 File2 [flags]`,
 	Args:  cobra.MinimumNArgs(2), //expect 2 positional arguments File1 and File2
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -48,8 +49,16 @@ var DiffCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		// opW := &operation.OpWriter{}
-		diffW := operation.NewDiffWriter(os.Stdout)
+
+		out := os.Stdout
+		if output != "" {
+			out, err = os.Create(output)
+			if err != nil {
+				log.Error().Err(err).Msgf("could not open file `%s`", output)
+				return err
+			}
+		}
+		diffW := operation.NewDiffWriter(out)
 		err = delta.Calculate2(target, sig, diffW)
 		if err != nil {
 			log.Error().Err(err).Msgf("error calculating delta")
@@ -67,11 +76,12 @@ var DiffCmd = &cobra.Command{
 
 func init() {
 
-	DiffCmd.Flags().Uint32VarP(&blockSize, "blocksize", "b", 5, "the size of chunks in bytes to use when matching data from the files max is 0 < b <=5552")
+	DiffCmd.Flags().Uint32VarP(&blockSize, "blocksize", "b", 4, "the size of chunks in bytes to use when matching data from the files max is 0 < b <=5552")
 	// 5552 is the maximum value that the rolling checksum algorithm will work for certain algorithms,
 	// so we use that as a sensible max
 	// /* NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1 */
 	DiffCmd.Flags().StringVarP(&loglevel, "loglevel", "l", "ERROR", "log level to display {DEBUG|INFO|ERROR} default=ERROR")
+	DiffCmd.Flags().StringVarP(&output, "output", "o", "", "optional file to write output to")
 
 }
 
