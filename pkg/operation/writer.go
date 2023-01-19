@@ -7,17 +7,6 @@ import (
 
 type OpType uint8
 
-const (
-	OpMatch OpType = iota // reference
-	OpMiss                // addition
-)
-
-type Operation struct {
-	operation  OpType
-	data       []byte
-	blockIndex uint64
-}
-
 type OpWriter struct {
 	ops []Operation
 }

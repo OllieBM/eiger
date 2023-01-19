@@ -9,23 +9,24 @@ import (
 )
 
 type StringWriteCloser struct {
-	strings.Builder
+	*strings.Builder
 	closed bool
 }
 
 func (s *StringWriteCloser) Write(p []byte) (int, error) {
 	if s.closed {
-		return nil, ErrClosed
+		return 0, ErrClosed
 	}
-	return s.Write(p)
+	return s.Builder.Write(p)
 }
 func (s *StringWriteCloser) Close() error {
 	s.closed = true
 	return nil
 }
-func NewStringWriteCloser() io.WriteCloser {
+func NewStringWriteCloser(builder *strings.Builder) io.WriteCloser {
 	return &StringWriteCloser{
-		closed: false,
+		Builder: builder,
+		closed:  false,
 	}
 }
 

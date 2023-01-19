@@ -98,3 +98,7 @@ func (s *Signature) FindMatch(weak uint32, buf []byte) (bool, int) {
 func (s Signature) BlockSize() int {
 	return s.blockSize
 }
+
+func (s Signature) Hashtable() hashtable {
+	return s.m
+}

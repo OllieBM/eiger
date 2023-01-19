@@ -166,13 +166,20 @@ func Calculate2(in io.Reader, sig *signature.Signature, out operation.DiffWriter
 		if !rolling {
 			n, err = reader.Read(chunk)
 			weak = r.Calculate(chunk)
-			log.Debug().Msgf("read %s", chunk)
 			chunk = chunk[:n]
+			log.Debug().Msgf("read %s", chunk)
 			if n == 0 {
 				break
 			}
 
 		} else {
+
+			// b, err = reader.ReadByte()
+			// if err != nil {
+			// 	break
+			// }
+			// chunk = append(chunk[1:], b)
+			// weak = r.Roll(prevC, b)
 
 			b, err = reader.ReadByte()
 			if err != nil {
@@ -195,12 +202,113 @@ func Calculate2(in io.Reader, sig *signature.Signature, out operation.DiffWriter
 		}
 	}
 
+	// missing chunks :
 	if err != nil {
 		if err != io.EOF {
 			log.Error().Err(err)
 			return err
 		}
-
 	}
+	return nil
+}
+
+// calculate2 tracking any unused chunks
+func Calculate3(in io.Reader, sig *signature.Signature, out operation.ODiffWriter) error {
+	if sig == nil {
+		log.Error().Err(ErrInvalidSignature)
+		return ErrInvalidSignature
+	}
+	if out == nil {
+		log.Error().Err(ErrInvalidOpWriter)
+		return ErrInvalidOpWriter
+	}
+
+	// matched chunks :=
+	matched := make(map[uint64]struct{})
+
+	reader := bufio.NewReader(in)
+	r := rolling_checksum.New()
+
+	chunk := make([]byte, sig.BlockSize())
+	//one := make([]byte, 1)
+	//buf := chunk // shadow the underlying buffer
+
+	rolling := false
+
+	var n int
+	var b, prevC byte
+	var weak uint32
+
+	var err error
+
+	// read either [1]byte or [blockSize]byte from reader
+	// until an error occurs
+
+	// read buf amount of bytes,
+	// it is either a buffer of 1 or blocksize
+	rolling = false
+	for err == nil {
+		if !rolling {
+			n, err = reader.Read(chunk)
+			chunk = chunk[:n]
+			weak = r.Calculate(chunk)
+			log.Debug().Msgf("read %s", chunk)
+			if n == 0 {
+				break
+			}
+
+		} else {
+
+			b, err = reader.ReadByte()
+			if err != nil {
+				break
+			}
+			chunk = append(chunk[1:], b)
+			weak = r.Roll(prevC, b)
+		}
+
+		match, indx := sig.FindMatch(weak, chunk)
+		if match {
+			log.Debug().Msgf("Match for '%s' weak[%d]", chunk, weak)
+			rolling = false
+			out.AddMatch(uint64(indx))
+			matched[uint64(indx)] = struct{}{}
+
+		} else {
+			rolling = true
+			prevC = chunk[0]
+			log.Debug().Msgf("Miss for '%s' weak[%d] adding %s", string(chunk), weak, string(prevC))
+			out.AddMiss(prevC)
+		}
+	}
+
+	// write out missing characters if there are some left
+	if rolling {
+		chunk = chunk[1:]
+		for len(chunk) > 0 {
+			out.AddMiss(chunk[0])
+			chunk = chunk[1:]
+		}
+	}
+	// write out any unmatched chunks
+	missing := make([]uint64, 0)
+	for _, v := range sig.Hashtable() {
+		for _, block := range v {
+
+			if _, ok := matched[uint64(block.Index)]; !ok {
+				missing = append(missing, uint64(block.Index))
+			}
+		}
+	}
+	out.AddMissingIndexes(missing)
+
+	// missing chunks :
+	if err != nil {
+		if err != io.EOF {
+			log.Error().Err(err)
+			return err
+		}
+	}
+
 	return nil
 }
