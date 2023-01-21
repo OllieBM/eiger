@@ -283,6 +283,16 @@ func TestOnlyDiffE2E(t *testing.T) {
 			5,
 		},
 		{
+			// here two blocks have been swapped, but its registerd
+			// as a sequencial remove, then additions
+			"moved_chunk_mid_to_mid",
+			"Hello01234abcdeWorld56789",
+			"HelloWorldabcde0123456789",
+			"- BLOCK_1\n- BLOCK_2\n= @4 BLOCK_2\n= @4 BLOCK_1\n",
+
+			5,
+		},
+		{
 			// counts as missing block0 & 1  then reference block 0 & 1
 			// offset is the block index to add things to (before that specific block)
 			// this example @3 would mean, add/reference block before reading block 3
@@ -292,6 +302,7 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"- BLOCK_0\n- BLOCK_1\n= @3 BLOCK_0\n= @3 BLOCK_1\n",
 			5,
 		},
+
 		{
 			"added_chars_start",
 			"WorldItsme",
@@ -315,7 +326,6 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"+ @2 5 Itsme\n",
 			5,
 		},
-
 		// multiple added
 		{
 			"added_chars_start_and_end",
@@ -346,9 +356,26 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"- BLOCK_0\n- BLOCK_2\n- BLOCK_3\n",
 			5,
 		},
-
 		{
-			"larger example",
+			// if we make the assumption a delta applier will copy all unreferenced blocks, then any removals will need to be transmitted
+			// only the fist block
+			"trimmed_file",
+			`0123456789abcdefghijklmnopqrst`,
+			`0123456789`,
+			"- BLOCK_1\n- BLOCK_2\n",
+			10,
+		},
+		{
+			// if we make the assumption a delta applier will copy all unreferenced blocks, then any removals will need to be transmitted
+			// this example the source will be split into
+			"trimmed_file_repeating_text",
+			`123456789123456789123456789123456789`,
+			`123456789123456789`,
+			"= @1 BLOCK_0\n- BLOCK_1\n- BLOCK_2\n- BLOCK_3\n", // this case can be problematic since it depends how the hasher matches the file
+			9, // a lower threshold can cause collisions in the weak_sum and strong sum, consider looking into a checksum which also uses the block_offset
+		},
+		{
+			"repeating_text_larger_example",
 			`12346789
 12346789
 12346789
@@ -356,7 +383,7 @@ func TestOnlyDiffE2E(t *testing.T) {
 123456789
 123456789
 123456789
-123456789`, // no number 5 for the
+123456789`,
 			`123456789
 123456789
 123456789
@@ -375,7 +402,7 @@ func TestOnlyDiffE2E(t *testing.T) {
 
 			sb := strings.Builder{}
 			s := NewStringWriteCloser(&sb)
-			writer := operation.NewOnlyDiffWriter(s)
+			writer := operation.NewMinimalDiffWriter(s)
 
 			sig, err := signature.New(strings.NewReader(tc.source), tc.chunkSize, hasher, rc)
 			require.NoError(t, err)
