@@ -226,13 +226,13 @@ func TestOnlyDiffE2E(t *testing.T) {
 
 			sb := strings.Builder{}
 			s := NewStringWriteCloser(&sb)
-			writer := operation.NewMinimalDiffWriter(s)
+			writer := operation.NewDiffWriter(s)
 
 			sig, err := signature.New(strings.NewReader(tc.source), tc.chunkSize, hasher, rc)
 			require.NoError(t, err)
 			require.NotNil(t, sig)
 
-			err = delta.Calculate3(strings.NewReader(tc.target), sig, rc, writer)
+			err = delta.Calculate(strings.NewReader(tc.target), sig, rc, writer)
 			require.NoError(t, err)
 			require.NoError(t, writer.Flush())
 			require.Equal(t,

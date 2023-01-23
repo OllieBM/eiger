@@ -2,10 +2,11 @@ TODO: add chunksize to delta file (only inmportant for the applying of deltas so
 
 # Eiger-Diff
 A diff application using a Rolling Hash Algorithm to create an instruction file with the transformations needed to convert one file to another.
-
+I used the basic rolling checksum implementation explained in the [rsync algorithm](https://rsync.samba.org/tech_report/node3.html) whitepaper.
+there are some more performant examples based closer on the Adler32, but I didn't feel the improvements would be worth spending more time on this 
+example. 
 
 ## Build and Run
-
 ```
 #run using go
 go run main.go ...<usage>
@@ -29,18 +30,6 @@ Flags:
   -l, --loglevel string    log level to display {DEBUG|INFO|ERROR} default=ERROR (default "ERROR")
   -o, --output string      optional file to write output to
 ```
-
-
-# Rolling Hash Algorithm
-_Spec v4 (2021-03-09)_
-
-Make a rolling hash based file diffing algorithm. When comparing original and an updated version of an input, it should return a description ("delta") which can be used to upgrade an original version of the file into the new file. The description contains the chunks which:
-- Can be reused from the original file
-- have been added or modified and thus would need to be synchronized
-
-The real-world use case for this type of construct could be a distributed file storage system. This reduces the need for bandwidth and storage. If many people have the same file stored on Dropbox, for example, there's no need to upload it again.
-
-A library that does a similar thing is [rdiff](https://linux.die.net/man/1/rdiff). You don't need to fulfill the patch part of the API, only signature and delta.
 
 ## Requirements
 - Hashing function gets the data as a parameter. Separate possible filesystem operations.
