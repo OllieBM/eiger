@@ -17,9 +17,9 @@ type Operation interface {
 	String() string
 }
 
-//////////////////
+// ////////////////
 // OpMatch		//
-//////////////////
+// ////////////////
 type OperationMatch struct {
 	chunkOffset uint64 // where an add/match is located in the source file
 	chunkStart  uint64 // which chunk is matched
@@ -33,9 +33,9 @@ func (o OperationMatch) String() string {
 	return fmt.Sprintf("= @%d CHUNK_%d\n", o.chunkOffset, o.chunkStart)
 }
 
-//////////////////
+// ////////////////
 // OpMiss		//
-//////////////////
+// ////////////////
 type OperationMiss struct {
 	chunkOffset uint64 // where an add/match is located in delta target position
 	data        []byte // characters to add to the target before the chunks at chunkOffset
@@ -48,9 +48,9 @@ func (o OperationMiss) String() string {
 	return fmt.Sprintf("+ @%d %d %s\n", o.chunkOffset, len(o.data), string(o.data))
 }
 
-//////////////////
+// ////////////////
 // OpRemove		//
-//////////////////
+// ////////////////
 type OperationRemoval struct {
 	chunkStart uint64 // which chunk a remove begins
 	chunkEnd   uint64 // which chunk a remove ends

@@ -11,3 +11,4 @@
 - [ ] add a verbose option to the diffWriter to add references for matching blocks
 - [ ] join the strong Hash and rolling checksum into a single type
 - [ ] Use Ring buffer for the rolling checksum
+- [ ] refactor diffWriter.go::AddMatch

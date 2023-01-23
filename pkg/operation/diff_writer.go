@@ -67,6 +67,10 @@ func (w *diffWriter) AddMatch(index uint64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	if w.prevOp != nil && w.prevOp.Operation() != OpMatch {
+		w.flush()
+	}
+
 	// if this wasn't the expected block
 	if w.blockOffset != index {
 
@@ -97,6 +101,7 @@ func (w *diffWriter) AddMatch(index uint64) {
 			w.addRemoval(&OperationRemoval{chunkStart: w.blockOffset, chunkEnd: index})
 		}
 	}
+
 	w.blockOffset = index + 1 // expect the next index
 }
 
