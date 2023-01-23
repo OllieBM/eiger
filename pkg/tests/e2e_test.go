@@ -13,183 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// /////// E2E TESTS
-// func TestE2E(t *testing.T) {
-// 	old := "Hello"
-// 	new := "HelloWorld"
-
-// 	opW := &operation.OpWriter{}
-// 	opW.AddMatch(0)
-// 	expected := opW.Operations()
-// 	require.Len(t, expected, 1)
-// 	opW.AddMiss('W')
-// 	opW.AddMiss('o')
-// 	opW.AddMiss('r')
-// 	opW.AddMiss('l')
-// 	opW.AddMiss('d')
-// 	expected = opW.Operations()
-// 	require.Len(t, expected, 2)
-// 	// create a signature
-
-// 	rc := rolling_checksum.New()
-// 	hasher := md5.New()
-// 	sig, err := signature.New(strings.NewReader(old), 5, rc, hasher)
-// 	require.NoError(t, err)
-// 	require.NotNil(t, sig)
-
-// 	opW = &operation.OpWriter{}
-// 	//err = delta.Calculate(strings.NewReader(new), sig, rc, opW)
-// 	require.NoError(t, err)
-
-// 	require.Equal(t, expected, opW.Operations())
-
-// 	//opW.Output()
-// }
-
-// func TestOutput(t *testing.T) {
-
-// 	tcs := []struct {
-// 		description string
-// 		source      string
-// 		target      string
-// 		expected    string
-// 		chunkSize   int
-// 	}{
-// 		{
-// 			"matching_files_of_blocksize_length",
-// 			"hello",
-// 			"hello",
-// 			"= BLOCK_0\n",
-// 			5,
-// 		},
-// 		{
-// 			"Matching_files_of_multiple_blocksize",
-// 			"hello Worl",
-// 			"hello Worl",
-// 			"= BLOCK_0\n= BLOCK_1\n",
-// 			5,
-// 		},
-// 		{
-// 			"matching_files_with_tail_<_blocksize",
-// 			"hello World",
-// 			"hello World", // hello| worl |d
-// 			"= BLOCK_0\n= BLOCK_1\n= BLOCK_2\n",
-// 			5,
-// 		},
-// 		{
-// 			"rearranged_blocks",
-// 			"helloWorld",
-// 			"Worldhello",
-// 			"= BLOCK_1\n= BLOCK_0\n", // BLOCK_2 is '\n'
-// 			5,
-// 		},
-// 		{
-// 			"rearranged_blocks_with_tail_addition",
-// 			"helloWorld",
-// 			"WorldhelloMore",
-// 			"= BLOCK_1\n= BLOCK_0\n+ 4 More\n", // BLOCK_2 is '\n'
-// 			5,
-// 		},
-// 		{
-// 			"rearranged_blocks_with_middle_addition",
-// 			"helloWorld",
-// 			"WorldMorehello",
-// 			"= BLOCK_1\n+ 4 More\n= BLOCK_0\n", // BLOCK_2 is '\n'
-// 			5,
-// 		},
-// 		{
-// 			"rearranged blocks_with_start_addition",
-// 			"helloWorld",
-// 			"MoreWorldhello",
-// 			"+ 4 More\n= BLOCK_1\n= BLOCK_0\n", // BLOCK_2 is '\n'
-// 			5,
-// 		},
-// 		{
-// 			"rearranged_blocks_with_removal",
-// 			"helloMoreWorld", // |hello|MoreW|orld since "World will not be matched since it is not a tail"
-// 			"Worldhello",
-// 			"+ 5 World\n= BLOCK_0\n",
-// 			5,
-// 		},
-// 		{
-// 			"rearranged_blocks_with_removal_uniform_blocks",
-// 			"helloMore World", // |hello|More |World
-// 			"Worldhello",
-// 			"= BLOCK_2\n= BLOCK_0\n",
-// 			5,
-// 		},
-// 		{
-// 			"rearranged_blocks_with_removal",
-// 			"helloMoreWorld", // |hello|MoreW|orld
-// 			"Worldhello",
-// 			"+ 5 World\n= BLOCK_0\n",
-// 			5,
-// 		},
-// 		{
-// 			"additional_characters",
-// 			"hello",
-// 			"helloWorld",
-// 			"= BLOCK_0\n+ 5 World\n",
-// 			5,
-// 		},
-// 		{
-// 			"removed_charactesrs",
-// 			"hello",
-// 			"",
-// 			"", // empty delta, because we don't want any references or addition blocks
-// 			5,
-// 		},
-// 		{
-// 			"removed_charactesrs",
-// 			"helloworld",
-// 			"world",
-// 			"= BLOCK_1\n", // empty delta, because we don't want any references or additional
-// 			5,
-// 		},
-// 		{
-// 			// this is an example
-// 			// of 'dropping the tail' the check for the ` end`
-// 			// does not match up
-// 			"addition_between_blocks",
-// 			"start end",
-// 			"start middle end", // start| midd|le en|d => matched as |start| middle| end
-
-// 			"= BLOCK_0\n+ 7  middle\n= BLOCK_1\n",
-// 			5,
-// 		},
-// 		{
-// 			"empty_source_file_(all_additions)",
-// 			"",
-// 			"123 add missing text 456",
-// 			"+ 24 123 add missing text 456\n",
-// 			5,
-// 		},
-// 	}
-
-// 	for _, tc := range tcs {
-
-// 		t.Run(tc.description, func(t *testing.T) {
-// 			hasher := md5.New()
-// 			rc := rolling_checksum.New()
-// 			sig, err := signature.New(strings.NewReader(tc.source), 5, hasher, rc)
-// 			require.NoError(t, err)
-// 			require.NotNil(t, sig)
-
-// 			opW := &operation.OpWriter{}
-// 			err = delta.Calculate2(strings.NewReader(tc.target), sig, opW)
-// 			require.NoError(t, err)
-
-// 			out := &strings.Builder{}
-// 			err = opW.Output(out)
-// 			require.NoError(t, err)
-// 			require.Equal(t, tc.expected, out.String())
-// 		})
-// 	}
-
-// }
-
-///////////////////////////
-
 type StringWriteCloser struct {
 	*strings.Builder
 	closed bool
@@ -242,35 +65,35 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"empty_target",
 			"helloworld",
 			"",
-			"- BLOCK_0\n- BLOCK_1\n",
+			"- CHUNK_0...CHUNK_2\n",
 			5,
 		},
 		{
 			"empty_target_with_tail",
 			"helloworldtail",
 			"",
-			"- BLOCK_0\n- BLOCK_1\n- BLOCK_2\n",
+			"- CHUNK_0...CHUNK_3\n",
 			5,
 		},
 		{
 			"missing_chunk_start",
 			"HelloWorldItsme",
 			"WorldItsme",
-			"- BLOCK_0\n",
+			"- CHUNK_0...CHUNK_1\n",
 			5,
 		},
 		{
 			"missing_chunk_middle",
 			"HelloWorldItsme",
 			"HelloItsme",
-			"- BLOCK_1\n",
+			"- CHUNK_1...CHUNK_2\n",
 			5,
 		},
 		{
 			"missing_chunk_end",
 			"HelloWorldItsme",
 			"HelloWorld",
-			"- BLOCK_2\n",
+			"- CHUNK_2...CHUNK_3\n",
 			5,
 		},
 		// moved chunk
@@ -279,7 +102,7 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"moved_chunk_start_to_end",
 			"Hello12345World",
 			"12345WorldHello",
-			"- BLOCK_0\n= @3 BLOCK_0\n",
+			"- CHUNK_0...CHUNK_1\n= @3 CHUNK_0\n",
 			5,
 		},
 		{
@@ -288,7 +111,7 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"moved_chunk_mid_to_mid",
 			"Hello01234abcdeWorld56789",
 			"HelloWorldabcde0123456789",
-			"- BLOCK_1\n- BLOCK_2\n= @4 BLOCK_2\n= @4 BLOCK_1\n",
+			"- CHUNK_1...CHUNK_3\n= @4 CHUNK_2\n= @4 CHUNK_1\n",
 
 			5,
 		},
@@ -299,7 +122,7 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"moved_chunk_end_to_start",
 			"HelloWorld12345",
 			"12345HelloWorld",
-			"- BLOCK_0\n- BLOCK_1\n= @3 BLOCK_0\n= @3 BLOCK_1\n",
+			"- CHUNK_0...CHUNK_2\n= @3 CHUNK_0\n= @3 CHUNK_1\n",
 			5,
 		},
 
@@ -346,14 +169,14 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"trailing_removed",
 			"HelloWorldItsMe12345",
 			"HelloWorld",
-			"- BLOCK_2\n- BLOCK_3\n",
+			"- CHUNK_2...CHUNK_4\n",
 			5,
 		},
 		{
 			"trailing_removed_with_removed_start",
 			"HelloWorldItsMe12345",
 			"World",
-			"- BLOCK_0\n- BLOCK_2\n- BLOCK_3\n",
+			"- CHUNK_0...CHUNK_1\n- CHUNK_2...CHUNK_4\n",
 			5,
 		},
 		{
@@ -362,17 +185,18 @@ func TestOnlyDiffE2E(t *testing.T) {
 			"trimmed_file",
 			`0123456789abcdefghijklmnopqrst`,
 			`0123456789`,
-			"- BLOCK_1\n- BLOCK_2\n",
+			"- CHUNK_1...CHUNK_3\n",
 			10,
 		},
 		{
 			// if we make the assumption a delta applier will copy all unreferenced blocks, then any removals will need to be transmitted
-			// this example the source will be split into
+			// this example the source will be split into  3 identical blocks
+			// this case can be problematic since it depends how the hasher matches the file
 			"trimmed_file_repeating_text",
 			`123456789123456789123456789123456789`,
 			`123456789123456789`,
-			"= @1 BLOCK_0\n- BLOCK_1\n- BLOCK_2\n- BLOCK_3\n", // this case can be problematic since it depends how the hasher matches the file
-			9, // a lower threshold can cause collisions in the weak_sum and strong sum, consider looking into a checksum which also uses the block_offset
+			"= @1 CHUNK_0\n- CHUNK_1...CHUNK_4\n",
+			9, // a lower threshold can cause collisions in the weak_sum and strong sum, consider looking into a checksum which also uses the CHUNK_offset
 		},
 		{
 			"repeating_text_larger_example",
@@ -392,7 +216,7 @@ func TestOnlyDiffE2E(t *testing.T) {
 123456789
 123456789
 123456789`,
-			"- BLOCK_0\n- BLOCK_1\n- BLOCK_2\n- BLOCK_3\n+ @8 1 7\n= @8 BLOCK_7\n+ @8 1 7\n= @8 BLOCK_7\n+ @8 1 7\n= @8 BLOCK_7\n+ @8 1 7\n= @8 BLOCK_7\n",
+			"- CHUNK_0...CHUNK_4\n+ @8 1 7\n= @8 CHUNK_7\n+ @8 1 7\n= @8 CHUNK_7\n+ @8 1 7\n= @8 CHUNK_7\n+ @8 1 7\n= @8 CHUNK_7\n",
 			9,
 		},
 	}
