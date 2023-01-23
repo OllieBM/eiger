@@ -1,3 +1,5 @@
+TODO: add chunksize to delta file (only inmportant for the applying of deltas so skipping for now)
+
 # Eiger-Diff
 A diff application using a Rolling Hash Algorithm to create an instruction file with the transformations needed to convert one file to another.
 

@@ -16,8 +16,8 @@ func TestCreateSignature(t *testing.T) {
 
 	s := len(in) / 2
 	hasher := md5.New() // TODO: use mockgen tests
-
-	sig, err := New(reader, s, hasher)
+	rc := rolling_checksum.New()
+	sig, err := New(reader, s, hasher, rc)
 	require.NoError(t, err)
 	require.Len(t, sig.m, 2) // assumes the weak hashes don't cause collision
 
@@ -34,7 +34,8 @@ func TestCreateSignature(t *testing.T) {
 func TestFindMatch(t *testing.T) {
 	source := "Hello"
 	hasher := md5.New()
-	sig, err := New(strings.NewReader(source), 5, hasher)
+	rc := rolling_checksum.New()
+	sig, err := New(strings.NewReader(source), 5, hasher, rc)
 	hasher.Reset()
 	require.NoError(t, err)
 	require.NotNil(t, sig)

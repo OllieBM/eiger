@@ -86,7 +86,7 @@ var DiffCmd = &cobra.Command{
 			}
 		}
 		//writer := operation.NewDiffWriter(out)
-		writer := operation.NewOnlyDiffWriter(out)
+		writer := operation.NewMinimalDiffWriter(out)
 		err = delta.Calculate3(target, sig, rc, writer)
 		if err != nil {
 			log.Error().Err(err).Msgf("error calculating delta")

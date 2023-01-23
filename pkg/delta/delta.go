@@ -213,7 +213,7 @@ var (
 // }
 
 // calculate2 tracking any unused chunks
-func Calculate3(in io.Reader, sig *signature.Signature, rc rolling_checksum.RollingChecksum, out operation.ODiffWriter) error {
+func Calculate3(in io.Reader, sig *signature.Signature, rc rolling_checksum.RollingChecksum, out operation.MinimalDiffWriter) error {
 
 	if sig == nil {
 		log.Error().Err(ErrInvalidSignature).Msg("")
@@ -238,11 +238,7 @@ func Calculate3(in io.Reader, sig *signature.Signature, rc rolling_checksum.Roll
 
 	var err error
 
-	// read either [1]byte or [blockSize]byte from reader
-	// until an error occurs
-
-	// read buf amount of bytes,
-	// it is either a buffer of 1 or blocksize
+	// read either 1 byte, of chunk_size amount of bytes, until an error occurs
 	rolling = false
 	for err == nil {
 		if !rolling {
@@ -253,9 +249,7 @@ func Calculate3(in io.Reader, sig *signature.Signature, rc rolling_checksum.Roll
 			if n == 0 {
 				break
 			}
-
 		} else {
-
 			b, err = reader.ReadByte()
 			if err != nil {
 				break
@@ -270,7 +264,6 @@ func Calculate3(in io.Reader, sig *signature.Signature, rc rolling_checksum.Roll
 			rolling = false
 			out.AddMatch(uint64(indx))
 			matched[uint64(indx)] = struct{}{}
-
 		} else {
 			rolling = true
 			prevC = chunk[0]
@@ -287,7 +280,7 @@ func Calculate3(in io.Reader, sig *signature.Signature, rc rolling_checksum.Roll
 			chunk = chunk[1:]
 		}
 	}
-	// write out any unmatched chunks
+	// write out any unmatched chunks from the source signature?
 	missing := make([]uint64, 0)
 	for _, v := range sig.Hashtable() {
 		for _, block := range v {

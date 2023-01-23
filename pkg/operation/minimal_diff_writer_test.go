@@ -10,9 +10,9 @@ import (
 func TestNewOnlyDiffWriter(t *testing.T) {
 
 	s := NewStringWriteCloser(&strings.Builder{})
-	w := NewOnlyDiffWriter(s)
+	w := NewMinimalDiffWriter(s)
 	require.NotNil(t, w)
-	_, ok := w.(*onlyDifferencesWriter)
+	_, ok := w.(*minimalDiffWriter)
 	require.True(t, ok)
 
 }
@@ -21,9 +21,7 @@ func TestNewOnlyDiffWriterAddMatch(t *testing.T) {
 
 	sb := strings.Builder{}
 	s := NewStringWriteCloser(&sb)
-	//w := NewOnlyDiffWriter(s).
-	//require.NotNil(t, w)
-	w, ok := NewOnlyDiffWriter(s).(*onlyDifferencesWriter)
+	w, ok := NewMinimalDiffWriter(s).(*minimalDiffWriter)
 	require.True(t, ok)
 	// tcs := []struct{
 	// 	desc string
